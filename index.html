@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Atharv Mundhe</title>
+  <meta name="description" content="Atharv Mundhe's room: college, work at Purplle, projects, and a phone on the bed.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,680&family=Nunito:wght@500;700&display=swap" rel="stylesheet">
+  <script type="importmap">
+    { "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+    } }
+  </script>
+  <style>
+    :root {
+      --ink: #2c2118;
+      --paper: #f6efe2;
+      --wood: #6b4128;
+      --marigold: #e2a04a;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #c9b59a; overflow: hidden; color: var(--ink); font-family: Nunito, "Trebuchet MS", sans-serif; }
+    canvas#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
+    .mast { position: fixed; left: 18px; top: 16px; z-index: 2; pointer-events: none; }
+    .mast h1 { margin: 0; font-family: Fraunces, Georgia, serif; font-size: clamp(28px, 4vw, 44px); font-weight: 680; line-height: 0.95; }
+    .mast p { margin: 6px 0 0; max-width: 28ch; font-size: 15px; }
+    .bar { position: fixed; right: 16px; top: 16px; display: flex; gap: 6px; z-index: 2; }
+    .bar button, .texty, .panel button, .ask button, .term-row button {
+      font: 700 14px/1 Nunito, sans-serif; color: var(--ink); background: var(--paper);
+      border: 2px solid var(--ink); border-radius: 999px; padding: 8px 12px; cursor: pointer;
+    }
+    .bar button[aria-pressed="true"] { background: var(--marigold); }
+    button:focus-visible, a:focus-visible { outline: 3px solid var(--wood); outline-offset: 2px; }
+    .panel, .ask {
+      position: fixed; z-index: 3; right: 16px; bottom: 72px; width: min(420px, calc(100vw - 32px));
+      max-height: min(70dvh, 560px); overflow: auto; background: var(--paper);
+      border: 3px solid var(--ink); border-radius: 18px; padding: 16px 16px 12px;
+      box-shadow: 6px 6px 0 var(--ink);
+    }
+    .panel h2, .ask h3 { font-family: Fraunces, Georgia, serif; margin: 0; font-size: 28px; line-height: 1.05; }
+    .panel p, .ask p { font-size: 16px; line-height: 1.45; }
+    .panel-head, .ask-actions { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    #vscode {
+      position: fixed; z-index: 3; left: 50%; top: 50%; transform: translate(-50%, -46%);
+      width: min(920px, calc(100vw - 24px)); height: min(640px, calc(100dvh - 24px));
+      display: grid; grid-template-columns: 220px 1fr; grid-template-rows: 1fr 148px;
+      background: #1e1e1e; color: #d4d4d4; border: 3px solid #111; border-radius: 10px; overflow: hidden;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+    }
+    #vscode[hidden], .panel[hidden], #phone[hidden], .ask[hidden] { display: none; }
+    .side { background: #252526; padding: 12px 10px; overflow: auto; }
+    .side p { margin: 0 0 8px; color: #bbbbbb; letter-spacing: 0.04em; font-size: 11px; }
+    .side button { display: block; width: 100%; text-align: left; background: transparent; color: #cccccc; border: 0; padding: 6px 8px; cursor: pointer; font: inherit; border-radius: 4px; }
+    .side button.open, .side button:hover { background: #37373d; }
+    .editor { padding: 0; display: flex; flex-direction: column; min-width: 0; }
+    .tab { background: #2d2d2d; padding: 8px 12px; color: #fff; }
+    .doc { margin: 0; padding: 14px 16px; white-space: pre-wrap; overflow: auto; line-height: 1.45; flex: 1; }
+    .term { grid-column: 1 / -1; background: #1a1a1a; border-top: 1px solid #333; padding: 8px 12px; display: flex; flex-direction: column; min-height: 0; }
+    .term pre { margin: 0 0 6px; white-space: pre-wrap; color: #c8c8c8; overflow: auto; flex: 1; }
+    .term-row { display: flex; gap: 8px; align-items: center; }
+    .term-row span { color: #9cdcfe; white-space: nowrap; }
+    .term-row input { flex: 1; background: transparent; border: 0; color: #fff; font: inherit; outline: none; }
+    .code-close { position: absolute; right: 12px; top: 12px; z-index: 4; }
+    #phone {
+      position: fixed; z-index: 3; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: min(320px, calc(100vw - 48px)); height: min(640px, calc(100dvh - 48px));
+      background: #f4efe6; border: 3px solid var(--ink); border-radius: 36px; padding: 54px 18px 28px;
+      box-shadow: 8px 8px 0 rgba(44, 33, 24, 0.35);
+    }
+    .apps { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 12px; }
+    .app { display: flex; flex-direction: column; align-items: center; gap: 6px; background: transparent; border: 0; cursor: pointer; color: var(--ink); font: 700 13px Nunito, sans-serif; }
+    .app img { width: 64px; height: 64px; object-fit: cover; border-radius: 16px; border: 2px solid var(--ink); }
+    #loader { position: fixed; inset: 0; display: grid; place-items: center; background: #e7d3b4; color: var(--ink);
+      font: 600 16px Fraunces, Georgia, serif; transition: opacity .6s ease; z-index: 5; }
+    #loader.done { opacity: 0; pointer-events: none; }
+    @media (max-width: 720px) {
+      #vscode { grid-template-columns: 1fr; grid-template-rows: 140px 1fr 130px; }
+      .mast p { display: none; }
+      .mast h1 { font-size: 26px; }
+      .bar { top: 48px; left: 16px; right: auto; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gl" tabindex="0" aria-label="Atharv's room. Drag to look around, scroll or pinch to come closer, click an object to read it."></canvas>
+  <header class="mast">
+    <h1>Atharv Mundhe</h1>
+    <p>Scroll to come closer. Click a book, the monitor, a box on the shelf, a certificate, the phone, or the masks.</p>
+  </header>
+  <nav class="bar" aria-label="Light">
+    <button data-light="morning" type="button">Morning</button>
+    <button data-light="golden" type="button">Afternoon</button>
+    <button data-light="night" type="button">Night</button>
+  </nav>
+  <article id="panel" class="panel" hidden></article>
+  <section id="vscode" hidden>
+    <button class="texty code-close" type="button" data-close="room">Back to the room</button>
+    <aside class="side">
+      <p data-tree>experience</p>
+      <div data-files></div>
+    </aside>
+    <div class="editor">
+      <div class="tab" data-tab>fulcrum.md</div>
+      <pre class="doc" data-doc></pre>
+    </div>
+    <div class="term">
+      <pre data-log></pre>
+      <form class="term-row" onsubmit="return false">
+        <span data-prompt>atharv@room experience %</span>
+        <input aria-label="Terminal" autocomplete="off" spellcheck="false">
+      </form>
+    </div>
+  </section>
+  <section id="phone" hidden>
+    <button class="texty" type="button" data-close="room" style="position:absolute;top:16px;right:16px">Close</button>
+    <div class="apps" data-apps></div>
+  </section>
+  <div id="ask" class="ask" hidden>
+    <h3>Open this?</h3>
+    <p></p>
+    <div class="ask-actions">
+      <button type="button" data-stay>Stay here</button>
+      <button type="button" data-go>Open</button>
+    </div>
+  </div>
+  <div id="loader">Opening the door</div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
