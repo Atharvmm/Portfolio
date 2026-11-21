@@ -22,17 +22,42 @@
       --marigold: #e2a04a;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; background: #c9b59a; overflow: hidden; color: var(--ink); font-family: Nunito, "Trebuchet MS", sans-serif; }
-    canvas#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
+    html, body { margin: 0; height: 100%; height: 100dvh; background: #c9b59a; overflow: hidden; color: var(--ink); font-family: Nunito, "Trebuchet MS", sans-serif; }
+    canvas#gl { position: fixed; inset: 0; width: 100%; height: 100%; height: 100dvh; display: block; outline: none; touch-action: none; }
     .mast { position: fixed; left: 18px; top: 16px; z-index: 2; pointer-events: none; }
     .mast h1 { margin: 0; font-family: Fraunces, Georgia, serif; font-size: clamp(28px, 4vw, 44px); font-weight: 680; line-height: 0.95; }
     .mast p { margin: 6px 0 0; max-width: 28ch; font-size: 15px; }
-    .bar { position: fixed; right: 16px; top: 16px; display: flex; gap: 6px; z-index: 2; }
-    .bar button, .texty, .panel button, .ask button, .term-row button {
+    #music {
+      position: fixed; left: 16px; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 4;
+      width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--ink); background: var(--paper);
+      font: 700 20px/1 Georgia, serif; cursor: pointer;
+    }
+    #music[aria-pressed="true"] { background: var(--marigold); }
+    #zone-btn {
+      position: fixed; right: 16px; top: 16px; z-index: 4;
+      width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--ink); background: var(--paper);
+      cursor: pointer; display: grid; place-items: center;
+    }
+    #zone-btn svg { width: 26px; height: 26px; }
+    #zones {
+      position: fixed; z-index: 5; right: 16px; top: 72px; width: min(280px, calc(100vw - 32px));
+      background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; padding: 12px;
+      box-shadow: 6px 6px 0 var(--ink); max-height: min(70dvh, 520px); display: flex; flex-direction: column; gap: 8px;
+    }
+    #zones[hidden] { display: none; }
+    #zones input { font: 700 15px Nunito, sans-serif; border: 2px solid var(--ink); border-radius: 10px; padding: 8px 10px; background: #fff; color: var(--ink); }
+    #zones [data-list] { overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+    #zones button.zone { text-align: left; border-radius: 10px; background: transparent; }
+    #zones button.zone[aria-selected="true"] { background: var(--marigold); }
+    #tip {
+      position: fixed; z-index: 4; pointer-events: none; background: var(--paper); color: var(--ink);
+      border: 2px solid var(--ink); border-radius: 999px; padding: 6px 10px;
+      font: 700 14px/1.2 Nunito, sans-serif; max-width: 240px;
+    }
+    .texty, .panel button, .ask button, .term-row button {
       font: 700 14px/1 Nunito, sans-serif; color: var(--ink); background: var(--paper);
       border: 2px solid var(--ink); border-radius: 999px; padding: 8px 12px; cursor: pointer;
     }
-    .bar button[aria-pressed="true"] { background: var(--marigold); }
     button:focus-visible, a:focus-visible { outline: 3px solid var(--wood); outline-offset: 2px; }
     .panel, .ask {
       position: fixed; z-index: 3; right: 16px; bottom: 72px; width: min(420px, calc(100vw - 32px));
@@ -58,11 +83,17 @@
     .editor { padding: 0; display: flex; flex-direction: column; min-width: 0; }
     .tab { background: #2d2d2d; padding: 8px 12px; color: #fff; }
     .doc { margin: 0; padding: 14px 16px; white-space: pre-wrap; overflow: auto; line-height: 1.45; flex: 1; }
-    .term { grid-column: 1 / -1; background: #1a1a1a; border-top: 1px solid #333; padding: 8px 12px; display: flex; flex-direction: column; min-height: 0; }
-    .term pre { margin: 0 0 6px; white-space: pre-wrap; color: #c8c8c8; overflow: auto; flex: 1; }
-    .term-row { display: flex; gap: 8px; align-items: center; }
+    .term { grid-column: 1 / -1; background: #1a1a1a; border-top: 1px solid #333; padding: 8px 12px 10px; display: flex; flex-direction: column; min-height: 0; gap: 6px; }
+    .term pre { margin: 0; white-space: pre-wrap; color: #c8c8c8; overflow: auto; flex: 1; min-height: 36px; }
+    .term .hint { margin: 0; color: #8d8d8d; font-size: 12px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips button { background: #2a2a2a; color: #d4d4d4; border: 1px solid #555; border-radius: 999px; padding: 4px 8px; font: inherit; cursor: pointer; }
+    .chips button:hover, .chips button:focus-visible { border-color: #9cdcfe; color: #fff; }
+    .term-row { display: flex; gap: 8px; align-items: center; border: 1px solid #6a6a6a; border-radius: 8px; padding: 6px 8px; background: #111; }
+    .term-row:focus-within { border-color: #9cdcfe; box-shadow: 0 0 0 1px #9cdcfe; }
     .term-row span { color: #9cdcfe; white-space: nowrap; }
-    .term-row input { flex: 1; background: transparent; border: 0; color: #fff; font: inherit; outline: none; }
+    .term-row input { flex: 1; min-width: 0; background: transparent; border: 0; color: #fff; font: inherit; outline: none; caret-color: #fff; }
+    .term-row input::placeholder { color: #777; }
     .code-close { position: absolute; right: 12px; top: 12px; z-index: 4; }
     #phone {
       position: fixed; z-index: 3; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -77,10 +108,16 @@
       font: 600 16px Fraunces, Georgia, serif; transition: opacity .6s ease; z-index: 5; }
     #loader.done { opacity: 0; pointer-events: none; }
     @media (max-width: 720px) {
-      #vscode { grid-template-columns: 1fr; grid-template-rows: 140px 1fr 130px; }
+      #vscode {
+        left: 0; right: 0; top: auto; bottom: 0; transform: none;
+        width: 100%; height: min(92dvh, 100%);
+        grid-template-columns: 1fr; grid-template-rows: 112px minmax(80px, 1fr) auto;
+        border-radius: 16px 16px 0 0;
+      }
+      .term { position: sticky; bottom: 0; }
       .mast p { display: none; }
       .mast h1 { font-size: 26px; }
-      .bar { top: 48px; left: 16px; right: auto; }
+      #zone-btn { top: 12px; right: 12px; }
     }
   </style>
 </head>
@@ -88,13 +125,20 @@
   <canvas id="gl" tabindex="0" aria-label="Atharv's room. Drag to look around, scroll or pinch to come closer, click an object to read it."></canvas>
   <header class="mast">
     <h1>Atharv Mundhe</h1>
-    <p>Scroll to come closer. Click a book, the monitor, a box on the shelf, a certificate, the phone, or the masks.</p>
+    <p>Drag to look around. Click a book, the monitor, a shelf, a certificate, the phone, or the masks.</p>
   </header>
-  <nav class="bar" aria-label="Light">
-    <button data-light="morning" type="button">Morning</button>
-    <button data-light="golden" type="button">Afternoon</button>
-    <button data-light="night" type="button">Night</button>
-  </nav>
+  <button id="music" type="button" aria-pressed="false" aria-label="Play the lo-fi">♪</button>
+  <button id="zone-btn" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Change timezone">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#2c2118" stroke-width="2">
+      <circle cx="12" cy="12" r="8"></circle>
+      <path d="M12 8v5l3 2"></path>
+    </svg>
+  </button>
+  <div id="zones" hidden>
+    <input type="search" placeholder="Search cities" aria-label="Search timezones">
+    <div data-list role="listbox" aria-label="Timezones"></div>
+  </div>
+  <div id="tip" hidden></div>
   <article id="panel" class="panel" hidden></article>
   <section id="vscode" hidden>
     <button class="texty code-close" type="button" data-close="room">Back to the room</button>
@@ -108,9 +152,11 @@
     </div>
     <div class="term">
       <pre data-log></pre>
+      <p class="hint">Type ls, or cd personal. A folder name opens it.</p>
+      <div class="chips" data-chips></div>
       <form class="term-row" onsubmit="return false">
         <span data-prompt>atharv@room experience %</span>
-        <input aria-label="Terminal" autocomplete="off" spellcheck="false">
+        <input aria-label="Terminal" autocomplete="off" spellcheck="false" placeholder="Type a command, e.g. ls">
       </form>
     </div>
   </section>

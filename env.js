@@ -14,12 +14,14 @@ export const U = {
 // skyEl drives the sky gradient, el the light: at golden hour the light sits a little above
 // the painted sun so faces still read. sunI/hemiI/envI are tuned together with exposure (exp).
 export const PRESETS = {
-  morning: { skyEl: 30, el: 32, az: 130, sunI: 3.0, sunC: '#fff1dc', hemiS: '#cfe0ff', hemiG: '#5a6a4a', hemiI: 0.5, envI: 0.75,
-    turb: 2.6, ray: 1.1, mie: 0.0035, mieG: 0.8, fogC: '#bccde2', fogD: 0.0035, exp: 0.62, night: 0, cloudLit: '#ffffff', cloudShade: '#b9c3d1', cloudA: 0.7 },
-  golden:  { skyEl: 5, el: 9, az: 250, sunI: 3.4, sunC: '#ffb066', hemiS: '#f2c9a3', hemiG: '#4a3c2e', hemiI: 0.42, envI: 0.62,
-    turb: 5.0, ray: 2.4, mie: 0.007, mieG: 0.86, fogC: '#dcae88', fogD: 0.0042, exp: 0.72, night: 0, cloudLit: '#ffd2a6', cloudShade: '#9a8a8c', cloudA: 0.68 },
-  night:   { skyEl: -14, el: 42, az: 205, sunI: 0.14, sunC: '#a8bcff', hemiS: '#22324f', hemiG: '#07090d', hemiI: 0.28, envI: 0.16,
-    turb: 2.0, ray: 0.6, mie: 0.002, mieG: 0.8, fogC: '#0b1322', fogD: 0.005, exp: 1.0, night: 1, cloudLit: '#3a4660', cloudShade: '#141b29', cloudA: 0.42 },
+  morning: { skyEl: 14, el: 18, az: 28, sunI: 2.6, sunC: '#fff1dc', hemiS: '#d5e4ff', hemiG: '#6a6248', hemiI: 0.46, envI: 0.7,
+    turb: 2.8, ray: 1.4, mie: 0.004, mieG: 0.8, fogC: '#c5d4e6', fogD: 0.0022, exp: 0.74, night: 0, cloudLit: '#fff6ea', cloudShade: '#c3b6a4', cloudA: 0.55 },
+  afternoon: { skyEl: 58, el: 64, az: 8, sunI: 2.8, sunC: '#fff8f0', hemiS: '#e7eef6', hemiG: '#6d6756', hemiI: 0.5, envI: 0.8,
+    turb: 2.1, ray: 0.75, mie: 0.002, mieG: 0.72, fogC: '#d7e3ee', fogD: 0.0016, exp: 0.7, night: 0, cloudLit: '#ffffff', cloudShade: '#c5ced8', cloudA: 0.45 },
+  golden:  { skyEl: 4, el: 8, az: 348, sunI: 2.2, sunC: '#ffb066', hemiS: '#f2c9a3', hemiG: '#4a3c2e', hemiI: 0.36, envI: 0.52,
+    turb: 4.6, ray: 2.2, mie: 0.006, mieG: 0.86, fogC: '#e0b48e', fogD: 0.0028, exp: 0.76, night: 0.05, cloudLit: '#ffd2a6', cloudShade: '#9a8a8c', cloudA: 0.5 },
+  night:   { skyEl: -12, el: 28, az: 20, sunI: 0.08, sunC: '#b7c6ee', hemiS: '#6d84ab', hemiG: '#3a332b', hemiI: 0.82, envI: 0.42,
+    turb: 2.0, ray: 0.55, mie: 0.002, mieG: 0.8, fogC: '#1a2433', fogD: 0.0015, exp: 1.22, night: 1, cloudLit: '#4a5670', cloudShade: '#1a2230', cloudA: 0.22 },
 };
 const NUM = ['skyEl', 'el', 'az', 'sunI', 'hemiI', 'envI', 'turb', 'ray', 'mie', 'mieG', 'fogD', 'exp', 'night', 'cloudA'];
 const COL = ['sunC', 'hemiS', 'hemiG', 'fogC', 'cloudLit', 'cloudShade'];
@@ -124,6 +126,7 @@ export function createEnvironment(renderer, scene, { preset = 'morning', scale =
     scene.fog.color.copy(cur.fogC); scene.fog.density = cur.fogD * (120 / scale);
     renderer.toneMappingExposure = cur.exp;
     U.uNight.value = cur.night;
+    sun.castShadow = cur.night < 0.82;
     scene.environmentIntensity = cur.envI;
     const cu = clouds.material.uniforms;
     cu.uLit.value.copy(cur.cloudLit); cu.uShade.value.copy(cur.cloudShade); cu.uA.value = cur.cloudA;
@@ -139,11 +142,11 @@ export function createEnvironment(renderer, scene, { preset = 'morning', scale =
 
   return {
     sun, hemi, current: preset,
-    set(name, seconds = 2.5) {
-      this.current = name;
+    set(name, seconds = 2.5) { this.pose(PRESETS[name], seconds); this.current = name; },
+    pose(goal, seconds = 2.5) {
       from = { ...cur }; for (const k of COL) from[k] = cur[k].clone();
-      to = PRESETS[name]; t0 = performance.now() / 1000; dur = Math.max(seconds, 0.001);
-      if (Math.abs(to.az - from.az) > 180) from.az += to.az > from.az ? 360 : -360;   // short way round
+      to = goal; t0 = performance.now() / 1000; dur = Math.max(seconds, 0.001);
+      if (Math.abs(to.az - from.az) > 180) from.az += to.az > from.az ? 360 : -360;
     },
     update(camera, target) {
       if (to) {

@@ -1,4 +1,5 @@
 import { BOOKS, CERTS, DRAMA, PHONE, SKILL_COPY, TREES } from './content.js';
+import { ZONES, getZone, setZone, zoneCity } from './lighting.js';
 
 const panel = document.getElementById('panel');
 const vscode = document.getElementById('vscode');
@@ -6,6 +7,9 @@ const phone = document.getElementById('phone');
 const ask = document.getElementById('ask');
 let fly = () => {};
 let term = { tree: 'experience', file: TREES.experience.files[0], lines: ['Type ls, or cd personal. cd and a folder name opens it.'] };
+const history = [];
+let hist = -1;
+const CHIPS = ['ls', 'cd personal', 'cd experience', 'cd ..', 'help', 'clear'];
 
 export function bindCamera(flyTo) { fly = flyTo; }
 
@@ -18,10 +22,15 @@ function closeAll() {
 
 export function openHot(id) {
   closeAll();
+  if (id === 'clock') {
+    openZones();
+    return;
+  }
   if (id === 'pc') {
     vscode.hidden = false;
     renderCode();
     fly('desk', 1.6);
+    requestAnimationFrame(() => vscode.querySelector('input').focus());
     return;
   }
   if (id === 'phone') {
@@ -118,7 +127,7 @@ function runCommand(raw) {
       if (found) term.file = found;
       else term.lines.push(`no such folder: ${rest.join(' ')}`);
     }
-  } else term.lines.push('try help');
+  } else term.lines.push(`command not found: ${cmd}. Try help, ls, or cd personal.`);
   if (term.lines.length > 8) term.lines = term.lines.slice(-8);
   renderCode();
 }
@@ -156,6 +165,53 @@ function confirmLeave(app) {
   };
 }
 
+function namesForTab() {
+  const tree = TREES[term.tree];
+  return ['help', 'ls', 'clear', 'cd', 'personal', 'experience', 'projects', 'purplle', '..', ...tree.files.map((file) => file.name)];
+}
+
+function complete(value) {
+  const bits = value.split(/\s+/);
+  const partial = bits[bits.length - 1].toLowerCase();
+  const pool = bits[0] === 'cd' ? namesForTab().filter((name) => name !== 'cd' && name !== 'help' && name !== 'ls' && name !== 'clear') : namesForTab();
+  const hit = pool.find((name) => name.toLowerCase().startsWith(partial));
+  if (!hit) return value;
+  bits[bits.length - 1] = hit;
+  return bits.join(' ');
+}
+
+function openZones() {
+  const box = document.getElementById('zones');
+  const button = document.getElementById('zone-btn');
+  box.hidden = false;
+  button.setAttribute('aria-expanded', 'true');
+  paintZones('');
+  box.querySelector('input').focus();
+}
+
+function closeZones() {
+  const box = document.getElementById('zones');
+  box.hidden = true;
+  document.getElementById('zone-btn').setAttribute('aria-expanded', 'false');
+}
+
+function paintZones(query) {
+  const list = document.querySelector('#zones [data-list]');
+  const q = query.trim().toLowerCase();
+  list.innerHTML = '';
+  for (const item of ZONES) {
+    if (q && !`${item.city} ${item.id}`.toLowerCase().includes(q)) continue;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'zone texty';
+    button.setAttribute('role', 'option');
+    button.setAttribute('aria-selected', String(item.id === getZone()));
+    button.textContent = `${item.city} · ${item.id}`;
+    button.addEventListener('click', () => { setZone(item.id); closeZones(); });
+    list.append(button);
+  }
+}
+
 export function mountUi() {
   document.querySelectorAll('[data-close]').forEach((button) => {
     button.addEventListener('click', () => {
@@ -164,14 +220,49 @@ export function mountUi() {
     });
   });
   const input = vscode.querySelector('input');
-  input.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter') return;
-    runCommand(input.value);
-    input.value = '';
+  const chips = vscode.querySelector('[data-chips]');
+  for (const cmd of CHIPS) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = cmd;
+    button.addEventListener('click', () => { runCommand(cmd); input.focus(); });
+    chips.append(button);
+  }
+  vscode.querySelector('.term').addEventListener('pointerdown', (event) => {
+    if (event.target.closest('button')) return;
+    input.focus();
   });
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      const value = input.value;
+      if (value.trim()) history.unshift(value);
+      hist = -1;
+      runCommand(value);
+      input.value = '';
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!history.length) return;
+      hist = Math.min(history.length - 1, hist + 1);
+      input.value = history[hist];
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      hist = Math.max(-1, hist - 1);
+      input.value = hist === -1 ? '' : history[hist];
+    } else if (event.key === 'Tab') {
+      event.preventDefault();
+      input.value = complete(input.value);
+    }
+  });
+  const zoneBtn = document.getElementById('zone-btn');
+  const zoneBox = document.getElementById('zones');
+  zoneBtn.addEventListener('click', () => { if (zoneBox.hidden) openZones(); else closeZones(); });
+  zoneBox.querySelector('input').addEventListener('input', (event) => paintZones(event.target.value));
+  zoneBtn.title = zoneCity();
+  addEventListener('zone-change', () => { zoneBtn.title = zoneCity(); });
   ask.querySelector('[data-stay]').addEventListener('click', () => { ask.hidden = true; });
   addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
+    if (!zoneBox.hidden) { closeZones(); return; }
     if (!ask.hidden) { ask.hidden = true; return; }
     const open = [panel, vscode, phone].some((el) => !el.hidden);
     if (open) { closeAll(); fly('room', 1.3); }
